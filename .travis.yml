@@ -24,6 +24,7 @@ cache:
 
 script:
   - git checkout $TRAVIS_COMMIT .  # travis.ci will overwrite to master branch
+  - go mod vendor
   - go test -race -mod=vendor -coverprofile=coverage.txt -covermode=atomic ./...
   # - go test -bench ./...
 

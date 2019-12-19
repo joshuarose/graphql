@@ -89,7 +89,6 @@ func (c *Client) do(ctx context.Context, op operationType, v interface{}, variab
 		return fmt.Errorf("unknown operationType, got %v", op)
 	}
 
-	fmt.Println(">> query", query)
 	var (
 		req  *http.Request
 		resp *http.Response
@@ -139,9 +138,6 @@ func (c *Client) do(ctx context.Context, op operationType, v interface{}, variab
 	if resp, err = c.httpClient.Do(req); err != nil {
 		return err
 	}
-
-	fmt.Printf(">> req: %+v\n", req)
-	fmt.Printf(">> resp: %+v\n", resp)
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

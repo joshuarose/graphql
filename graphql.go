@@ -95,7 +95,7 @@ func (c *Client) do(ctx context.Context, op operationType, v interface{}, variab
 	)
 	switch op {
 	case queryOperation:
-		if req, err = http.NewRequestWithContext(ctx, "GET", c.url, nil); err != nil {
+		if req, err = http.NewRequest("GET", c.url, nil); err != nil {
 			return err
 		}
 
@@ -121,7 +121,7 @@ func (c *Client) do(ctx context.Context, op operationType, v interface{}, variab
 		if err != nil {
 			return err
 		}
-		if req, err = http.NewRequestWithContext(ctx, "POST", c.url, &buf); err != nil {
+		if req, err = http.NewRequest("POST", c.url, &buf); err != nil {
 			return err
 		}
 	}
@@ -135,7 +135,7 @@ func (c *Client) do(ctx context.Context, op operationType, v interface{}, variab
 		req.AddCookie(&http.Cookie{Name: k, Value: val})
 	}
 
-	if resp, err = c.httpClient.Do(req); err != nil {
+	if resp, err = c.httpClient.Do(req.WithContext(ctx)); err != nil {
 		return err
 	}
 

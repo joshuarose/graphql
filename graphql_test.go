@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/shurcooL/graphql"
+	"github.com/Laisky/graphql"
 )
 
 func TestClient_Query_partialDataWithErrorResponse(t *testing.T) {
@@ -130,9 +130,10 @@ func TestClient_Query_errorStatusCode(t *testing.T) {
 func TestClient_Query_emptyVariables(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/graphql", func(w http.ResponseWriter, req *http.Request) {
-		body := mustRead(req.Body)
-		if got, want := body, `{"query":"{user{name}}"}`+"\n"; got != want {
-			t.Errorf("got body: %v, want %v", got, want)
+		// body := mustRead(req.Body)
+		body := req.URL.Query()["query"][0]
+		if got, want := body, `{user{name}}`; got != want {
+			t.Errorf("got body: `%v`, want `%v`", got, want)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		mustWrite(w, `{"data": {"user": {"name": "Gopher"}}}`)

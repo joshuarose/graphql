@@ -1,21 +1,80 @@
-package graphql
+package main
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
 	"sort"
+	"strings"
 
+	"github.com/joshuarose/graphql"
 	"github.com/joshuarose/graphql/ident"
 )
 
-func constructQuery(v interface{}, variables map[string]interface{}) string {
-	query := query(v)
-	if len(variables) > 0 {
-		return "query(" + queryArguments(variables) + ")" + query
+var jsonUnmarshaler = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()
+
+func main() {
+	vars := map[string]interface{}{
+		"deviceId":   graphql.ID("12345"),
+		"deviceType": graphql.DeviceType(strings.ToUpper("seagate")),
 	}
-	return query
+	got := constructMutation(CreateDevice, vars)
+	fmt.Println(got)
+}
+
+var CreateDevice struct {
+	CreateDevice struct {
+		Certificate graphql.String `graphql:"cert"`
+		PrivateKey  graphql.String `graphql:"privateKey"`
+	} `graphql:"createDevice(deviceId: $deviceId, deviceType:$deviceType)"`
+}
+
+// writeQuery writes a minified query for t to w.
+// If inline is true, the struct fields of t are inlined into parent struct.
+func writeQuery(w io.Writer, t reflect.Type, inline bool) {
+	switch t.Kind() {
+	case reflect.Ptr, reflect.Slice:
+		writeQuery(w, t.Elem(), false)
+	case reflect.Struct:
+		// If the type implements json.Unmarshaler, it's a scalar. Don't expand it.
+		if reflect.PtrTo(t).Implements(jsonUnmarshaler) {
+			return
+		}
+		if !inline {
+			io.WriteString(w, "{")
+		}
+		for i := 0; i < t.NumField(); i++ {
+			if i != 0 {
+				io.WriteString(w, ",")
+			}
+			f := t.Field(i)
+			value, ok := f.Tag.Lookup("graphql")
+			inlineField := f.Anonymous && !ok
+			if !inlineField {
+				if ok {
+					io.WriteString(w, value)
+				} else {
+					io.WriteString(w, ident.ParseMixedCaps(f.Name).ToLowerCamelCase())
+				}
+			}
+			writeQuery(w, f.Type, inlineField)
+		}
+		if !inline {
+			io.WriteString(w, "}")
+		}
+	}
+}
+
+// query uses writeQuery to recursively construct
+// a minified query string from the provided struct v.
+//
+// E.g., struct{Foo Int, BarBaz *Boolean} -> "{foo,barBaz}".
+func query(v interface{}) string {
+	var buf bytes.Buffer
+	writeQuery(&buf, reflect.TypeOf(v), false)
+	return buf.String()
 }
 
 func constructMutation(v interface{}, variables map[string]interface{}) string {
@@ -84,51 +143,3 @@ func writeArgumentType(w io.Writer, t reflect.Type, key string, value bool) {
 		io.WriteString(w, "!")
 	}
 }
-
-// query uses writeQuery to recursively construct
-// a minified query string from the provided struct v.
-//
-// E.g., struct{Foo Int, BarBaz *Boolean} -> "{foo,barBaz}".
-func query(v interface{}) string {
-	var buf bytes.Buffer
-	writeQuery(&buf, reflect.TypeOf(v), false)
-	return buf.String()
-}
-
-// writeQuery writes a minified query for t to w.
-// If inline is true, the struct fields of t are inlined into parent struct.
-func writeQuery(w io.Writer, t reflect.Type, inline bool) {
-	switch t.Kind() {
-	case reflect.Ptr, reflect.Slice:
-		writeQuery(w, t.Elem(), false)
-	case reflect.Struct:
-		// If the type implements json.Unmarshaler, it's a scalar. Don't expand it.
-		if reflect.PtrTo(t).Implements(jsonUnmarshaler) {
-			return
-		}
-		if !inline {
-			io.WriteString(w, "{")
-		}
-		for i := 0; i < t.NumField(); i++ {
-			if i != 0 {
-				io.WriteString(w, ",")
-			}
-			f := t.Field(i)
-			value, ok := f.Tag.Lookup("graphql")
-			inlineField := f.Anonymous && !ok
-			if !inlineField {
-				if ok {
-					io.WriteString(w, value)
-				} else {
-					io.WriteString(w, ident.ParseMixedCaps(f.Name).ToLowerCamelCase())
-				}
-			}
-			writeQuery(w, f.Type, inlineField)
-		}
-		if !inline {
-			io.WriteString(w, "}")
-		}
-	}
-}
-
-var jsonUnmarshaler = reflect.TypeOf((*json.Unmarshaler)(nil)).Elem()

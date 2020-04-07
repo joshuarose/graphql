@@ -68,11 +68,11 @@ func NewClient(url string, httpClient *http.Client, opts ...ClientOptFunc) (c *C
 
 // NewClient creates a GraphQL client targeting the specified GraphQL server URL.
 // If httpClient is nil, then http.DefaultClient is used.
-func NewClientAWS(url string, httpClient *http.Client, 	creds credentials.Credentials, region string, opts ...ClientOptFunc) (c *Client) {
+func NewClientAWS(url string, httpClient *http.Client, 	creds *credentials.Credentials, region string, opts ...ClientOptFunc) (c *Client) {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
-	signer := v4.NewSigner(&creds)
+	signer := v4.NewSigner(creds)
 	awsClient, _ := aws_signing_client.New(signer, httpClient, "appsync", region)
 	c = &Client{
 		headers:    defaultClientHeaders,

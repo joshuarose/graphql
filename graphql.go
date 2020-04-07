@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/sha1sum/aws_signing_client"
 	"io/ioutil"
 	"net/http"
 
@@ -56,6 +59,25 @@ func NewClient(url string, httpClient *http.Client, opts ...ClientOptFunc) (c *C
 		headers:    defaultClientHeaders,
 		url:        url,
 		httpClient: httpClient,
+	}
+	for _, optf := range opts {
+		optf(c)
+	}
+	return c
+}
+
+// NewClient creates a GraphQL client targeting the specified GraphQL server URL.
+// If httpClient is nil, then http.DefaultClient is used.
+func NewClientAWS(url string, httpClient *http.Client, 	creds credentials.Credentials, region string, opts ...ClientOptFunc) (c *Client) {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+	signer := v4.NewSigner(&creds)
+	awsClient, _ := aws_signing_client.New(signer, httpClient, "appsync", region)
+	c = &Client{
+		headers:    defaultClientHeaders,
+		url:        url,
+		httpClient: awsClient,
 	}
 	for _, optf := range opts {
 		optf(c)

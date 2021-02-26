@@ -34,8 +34,11 @@ type (
 	// human-readable text.
 	String string
 
-	// String to represent DeviceType Enum
+	// DeviceType is a string to represent DeviceType Enum
 	DeviceType interface{}
+
+	// AWSDateTime is a string to represent an AWSDateTime
+	AWSDateTime interface{}
 )
 
 // NewBoolean is a helper to make a new *Boolean.
@@ -53,5 +56,8 @@ func NewInt(v Int) *Int { return &v }
 // NewString is a helper to make a new *String.
 func NewString(v String) *String { return &v }
 
-// NewString is a helper to make a new *String.
+// NewDeviceType is a helper to make a new *DeviceType.
 func NewDeviceType(v DeviceType) *DeviceType { return &v }
+
+// NewAWSDateTime is a helper to make a new *AWSDateTime.
+func NewAWSDateTime(v AWSDateTime) *AWSDateTime { return &v }
